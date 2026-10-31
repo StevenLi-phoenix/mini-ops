@@ -18,7 +18,8 @@ daily_usd = 0.30         # local cap; the gateway key has its own daily cap of t
 [notify]
 url = "http://127.0.0.1:3081/hooks/lsy"
 kind_prefix = "host.ops" # DSH `host-alerts` subscription: kinds host.* -> a plain WeChat note
-max_per_hour = 4
+max_per_hour = 2          # the WeChat reply window (~10 messages per owner message) is shared with DSH
+max_per_day = 6           # the digest is counted but never blocked
 
 [gate]
 suppress_ttl_s = 259200  # an LLM "suppress" verdict is remembered for 3 days

@@ -43,7 +43,8 @@ class NotifyConfig:
     token_file: Path = Path("~/.config/mini-ops/host-token").expanduser()
     # Kinds must start with "<source>."; the token decides the source (the DSH `host` source).
     kind_prefix: str = "host.ops"
-    max_per_hour: int = 4
+    max_per_hour: int = 2
+    max_per_day: int = 6  # the WeChat reply window (~10 per owner message) is shared with DSH
     timeout_s: float = 10.0
 
 

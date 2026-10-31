@@ -22,22 +22,21 @@ V = Verdict(
 def test_alert_has_diagnosis_evidence_action_and_no_secrets():
     r = ActionResult("kickstart", "asr", True, True, "pid=7")
     title, text = render_alert(INC, V, r)
-    assert title.startswith("【运维】asr：ASR 进程退出")
-    assert (
-        "诊断：进程被 SIGKILL" in text
-        and "已执行 kickstart：成功" in text
-        and "建议：查内存" in text
-    )
+    # the phone only shows subject + title (DSH drops `text` in a notify note): all of it is in the title
+    assert title.startswith("ASR 进程退出 ｜ 诊断：进程被 SIGKILL")
+    assert "\n" not in title and len(title) <= 290
+    assert "已执行 kickstart：成功" in title and "建议：查内存" in title
+    assert text.startswith("【运维】asr：ASR 进程退出") and "证据：" in text
     assert "abcdefgh1234" not in text and "fourth" not in text  # redacted, max 3 evidence lines
 
 
 def test_alert_refused_action_and_fallback_without_llm():
     r = ActionResult("kickstart", "asr", False, False, "", "冷却中")
-    assert "未执行 kickstart：冷却中" in render_alert(INC, V, r)[1]
+    assert "未执行 kickstart：冷却中" in render_alert(INC, V, r)[0]
     title, text = render_alert(INC, None, None, note="LLM 不可用：今日调用已达上限")
-    assert "asr 没有在运行" in title and "LLM 不可用" in text
+    assert "asr 没有在运行" in title and "LLM 不可用" in title and "LLM 不可用" in text
     v2 = Verdict("act", "low", "s", "d", None, "", "rm_rf")
-    assert "不在允许清单" in render_alert(INC, v2, None)[1]
+    assert "不在允许清单" in render_alert(INC, v2, None)[0]
 
 
 def test_digest_groups_and_orders_by_count():
@@ -54,7 +53,8 @@ def test_digest_groups_and_orders_by_count():
     title, text = render_digest(
         items, {"actions": ["asr kickstart 成功"], "llm": "今日 LLM 3 次 $0.001"}, 0
     )
-    assert "2 类" in title and "共 14 次" in title
+    assert "2 类" in title and "共 14 次" in title and "\n" not in title and len(title) <= 290
+    assert title.index("RSS feed") < title.index("slow") and "×12" in title
     assert text.index("RSS feed") < text.index("slow")
     assert "本期动作：asr kickstart 成功" in text and "今日 LLM 3 次" in text
 
@@ -128,3 +128,16 @@ def test_missing_token_keeps_the_queue(tmp_path):
     n.cfg.token_file.unlink()
     n.enqueue("alert", "a", "s", "t", "x")
     assert n.flush() == (0, 0) and len(state["outbox"]) == 1
+
+
+def test_daily_cap(tmp_path):
+    t = [0.0]
+    n, state, _ = mk(tmp_path, [], max_per_hour=99, clock=lambda: t[0])
+    n.cfg = NotifyConfig(token_file=n.cfg.token_file, max_per_hour=99, max_per_day=3)
+    for i in range(3):
+        t[0] += 4000
+        assert n.enqueue("alert", f"k{i}", "s", "t", "x")
+    t[0] += 4000
+    assert n.enqueue("alert", "k9", "s", "t", "x") is False
+    t[0] += 86400
+    assert n.enqueue("alert", "k10", "s", "t", "x") is True

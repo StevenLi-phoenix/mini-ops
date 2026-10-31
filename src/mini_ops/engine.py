@@ -322,7 +322,7 @@ class Engine:
         title, text = render_alert(inc, v, result, note)
         digest = hashlib.sha1(inc.signature.encode()).hexdigest()[:10]  # noqa: S324 - not security
         key = f"ops-{digest}-{time.strftime('%Y%m%d%H%M', time.localtime(now))}"
-        if self.notifier.enqueue("alert", key, inc.service, title, text):
+        if self.notifier.enqueue("alert", key, f"运维·{inc.service}", title, text):
             report.alerts += 1
         else:
             self._hold(

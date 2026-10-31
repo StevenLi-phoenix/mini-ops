@@ -24,13 +24,34 @@ log = logging.getLogger("mini_ops.notify")
 MAX_TRIES = 8
 
 
+def _oneline(parts: list[str], limit: int) -> str:
+    return clip(" ｜ ".join(p for p in parts if p), limit)
+
+
 def render_alert(
     inc: Incident, verdict: Verdict | None, result: ActionResult | None, note: str = ""
 ) -> tuple[str, str]:
-    """(title, text) for an immediate notification."""
+    """``(title, text)`` for an immediate notification.
+
+    DSH's ``host-alerts`` note shows only ``subject`` and ``title`` (whitespace collapsed, 300
+    characters) -- the ``text`` field never reaches the phone. So the title carries the whole
+    message in one line; ``text`` keeps the long form for the journal and the API.
+    """
     head = verdict.summary if verdict and verdict.summary else inc.headline
-    title = clip(f"【运维】{inc.service}：{sanitize(head, 120)}", 200)
-    lines: list[str] = []
+    action = result.line() if result is not None else ""
+    if result is None and verdict and verdict.rejected_action:
+        action = f"未执行：模型提议的动作 {sanitize(verdict.rejected_action, 40)} 不在允许清单里"
+    title = _oneline(
+        [
+            sanitize(head, 70),
+            f"诊断：{sanitize(verdict.diagnosis, 110)}" if verdict and verdict.diagnosis else note,
+            sanitize(action, 80),
+            f"建议：{sanitize(verdict.advice, 60)}" if verdict and verdict.advice else "",
+            note if verdict and verdict.diagnosis else "",
+        ],
+        290,
+    )
+    lines: list[str] = [f"【运维】{inc.service}：{sanitize(head, 120)}"]
     if verdict and verdict.diagnosis:
         lines.append(f"诊断：{verdict.diagnosis}")
     elif note:
@@ -38,12 +59,8 @@ def render_alert(
     if inc.evidence:
         lines.append("证据：")
         lines += [f"- {sanitize(e, 160)}" for e in inc.evidence[:3]]
-    if result is not None:
-        lines.append(result.line())
-    elif verdict and verdict.rejected_action:
-        lines.append(
-            f"未执行：模型提议的动作 {sanitize(verdict.rejected_action, 40)} 不在允许清单里"
-        )
+    if action:
+        lines.append(action)
     if verdict and verdict.advice:
         lines.append(f"建议：{verdict.advice}")
     if note and verdict and verdict.diagnosis:
@@ -52,15 +69,19 @@ def render_alert(
 
 
 def render_digest(items: dict[str, Any], stats: dict[str, Any], now: float) -> tuple[str, str]:
+    """One-line title for the phone (see ``render_alert``), long form in ``text``."""
     total = sum(i["count"] for i in items.values())
-    title = f"【运维】摘要：{len(items)} 类问题已抑制/静音（共 {total} 次）"
     ordered = sorted(items.values(), key=lambda i: -i["count"])
+    short = [f"{i['service']} {sanitize(i['summary'], 28)}×{i['count']}" for i in ordered[:5]]
+    more = f"…另 {len(ordered) - 5} 类" if len(ordered) > 5 else ""
+    title = _oneline(
+        [f"摘要：{len(items)} 类问题已抑制/静音（共 {total} 次）：" + "；".join(short) + more], 290
+    )
     lines = []
     for i in ordered[:12]:
         last = time.strftime("%m-%d %H:%M", time.localtime(i["last"]))
         lines.append(
-            f"- {i['service']}：{sanitize(i['summary'], 100)} ×{i['count']}"
-            f"（{i['why']}，最后 {last}）"
+            f"- {i['service']}：{sanitize(i['summary'], 100)} ×{i['count']}（{i['why']}，最后 {last}）"
         )
     if len(ordered) > 12:
         lines.append(f"…还有 {len(ordered) - 12} 类")
@@ -83,9 +104,11 @@ class Notifier:
         self.cfg, self.state, self.post, self.clock = cfg, state, post, clock
 
     def room(self, now: float | None = None) -> bool:
+        """Hourly and daily caps: the WeChat reply window is shared with every other sender."""
         now = self.clock() if now is None else now
-        self.state["sent"] = [t for t in self.state["sent"] if now - t < 3600]
-        return len(self.state["sent"]) < self.cfg.max_per_hour
+        self.state["sent"] = [t for t in self.state["sent"] if now - t < 86400]
+        hour = sum(1 for t in self.state["sent"] if now - t < 3600)
+        return hour < self.cfg.max_per_hour and len(self.state["sent"]) < self.cfg.max_per_day
 
     def enqueue(
         self, suffix: str, key: str, subject: str, title: str, text: str, *, capped: bool = True
