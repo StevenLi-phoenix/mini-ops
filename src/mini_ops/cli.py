@@ -249,6 +249,7 @@ def main(argv: list[str] | None = None) -> int:
         "status": cmd_status,
         "freeze": cmd_freeze,
         "test-notify": cmd_test_notify,
+        "digest": cmd_digest,
         "check": cmd_check,
     }[args.cmd]
     return fn(cfg, args)
