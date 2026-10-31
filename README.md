@@ -1,5 +1,11 @@
 ![mini-ops](./docs/mini-ops.svg)
 
+> **Archived 2026-10-31.** mini-ops is merged into [agent-managed-services](https://github.com/StevenLi-phoenix/agent-managed-services)
+> as `ams watch` (observation, gates, guarded fixes and the Kaorou guard carried over; the LLM judgement layer was
+> not: escalations go to the AMS escalation journal, where the operator that reads it decides what the owner hears).
+> This repository is kept for history and is no longer maintained. See `docs/watch.md` there.
+
+
 # mini-ops
 
 A Mac mini that runs your pipelines unattended will fail at 3 a.m. in ways a restart policy cannot judge:

@@ -5,6 +5,10 @@ versioned with [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Archived: merged into agent-managed-services as `ams watch` (2026-10-31). The LLM triage layer was not carried over.
+
 ### Added
 
 - Production config watches `system/app.lishuyu.ams` (observe only, no logs): AMS supervises disk-watch and global-awareness, and nothing else noticed when it stopped.
