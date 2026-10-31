@@ -189,6 +189,16 @@ def cmd_test_notify(cfg: Config, args: argparse.Namespace) -> int:
     return 0 if delivered else 1
 
 
+def cmd_digest(cfg: Config, args: argparse.Namespace) -> int:
+    """Send the pending digest now (otherwise it goes out at the configured hours)."""
+    engine, store = build(cfg)
+    sent = engine.maybe_digest(time.time(), force=True)
+    delivered, failed = engine.notifier.flush()
+    store.save()
+    print(f"digest {'queued' if sent else 'empty'}; delivered={delivered} failed={failed}")
+    return 0
+
+
 def cmd_check(cfg: Config, args: argparse.Namespace) -> int:
     print(f"ok: {len(cfg.services)} services, mode={cfg.mode}, state={cfg.state_dir}")
     for s in cfg.services:
@@ -225,6 +235,7 @@ def main(argv: list[str] | None = None) -> int:
     fs.add_parser("list")
     t = sub.add_parser("test-notify", help="send one test message through the DSH host source")
     t.add_argument("text", nargs="?")
+    sub.add_parser("digest", help="send the pending digest now")
     sub.add_parser("check", help="validate the config and the credential files")
     args = ap.parse_args(argv)
     try:

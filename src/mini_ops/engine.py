@@ -334,11 +334,12 @@ class Engine:
             )
 
     # ---- digest -------------------------------------------------------------------------
-    def maybe_digest(self, now: float) -> bool:
+    def maybe_digest(self, now: float, *, force: bool = False) -> bool:
         d = self.store.data
         tm = time.localtime(now)
         slot = time.strftime("%Y%m%d%H", tm)
-        if tm.tm_hour not in self.cfg.digest_hours or d["digest_last"] == slot or not d["digest"]:
+        due = force or (tm.tm_hour in self.cfg.digest_hours and d["digest_last"] != slot)
+        if not due or not d["digest"]:
             return False
         recent = [h for h in d["actions"] if h["ts"] > now - 86400 and h["outcome"] != "refused"]
         spent = d["budget"].get(time.strftime("%Y-%m-%d", tm), {"calls": 0, "usd": 0.0})

@@ -288,3 +288,13 @@ def test_idle_tick_writes_nothing_after_the_first(tmp_path, n):
     r.engine.tick()
     r.engine.tick()
     assert (tmp_path / "state.json").stat().st_mtime_ns >= mtime
+
+
+def test_forced_digest_ignores_the_hour_but_not_emptiness(tmp_path):
+    r = Rig(tmp_path)
+    r.tick()
+    r.append("ERROR noise")
+    r.tick()
+    assert r.engine.maybe_digest(r.now) is False  # noon is not a digest hour
+    assert r.engine.maybe_digest(r.now, force=True) is True
+    assert r.engine.maybe_digest(r.now, force=True) is False  # nothing left

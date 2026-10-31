@@ -71,3 +71,8 @@ def test_run_once_survives_everything_unavailable(conf, tmp_path, capsys):
     assert cli.main(["-c", str(conf), "run", "--once"]) == 0
     st = json.loads((tmp_path / "state" / "state.json").read_text())
     assert st["baselined"] is True and "asr" in st["status"]["services"]
+
+
+def test_digest_with_nothing_pending(conf, capsys):
+    assert cli.main(["-c", str(conf), "digest"]) == 0
+    assert "digest empty" in capsys.readouterr().out
