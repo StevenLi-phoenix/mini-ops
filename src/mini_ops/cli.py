@@ -171,16 +171,40 @@ def cmd_freeze(cfg: Config, args: argparse.Namespace) -> int:
     return 0
 
 
+def _agent_running(cfg: Config) -> bool:
+    """True when the agent holds the state lock (then it is the only writer of the state file)."""
+    cfg.state_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with open(cfg.state_dir / "lock", "a") as fh:
+        try:
+            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            return True
+        fcntl.flock(fh, fcntl.LOCK_UN)
+        return False
+
+
+def _request(cfg: Config, op: str, **fields: object) -> None:
+    d = cfg.state_dir / "requests"
+    d.mkdir(parents=True, exist_ok=True, mode=0o700)
+    tmp = d / f".{op}.tmp"
+    tmp.write_text(json.dumps({"op": op, **fields}), encoding="utf-8")
+    os.replace(tmp, d / f"{op}-{int(time.time() * 1000)}.json")
+
+
 def cmd_test_notify(cfg: Config, args: argparse.Namespace) -> int:
+    text = args.text or "mini-ops 通知链路测试：如果你在微信里看到这条，链路是通的。"
+    if _agent_running(cfg):
+        _request(cfg, "test-notify", text=text)
+        print("handed to the running agent; it sends within one tick")
+        return 0
     store = Store(cfg.state_dir / "state.json")
     n = Notifier(cfg.notify, store.data)
-    stamp = time.strftime("%Y%m%d%H%M%S")
     n.enqueue(
         "test",
-        f"ops-test-{stamp}",
-        "mini-ops",
-        "【运维】测试通知",
-        args.text or "mini-ops 通知链路测试：如果你在微信里看到这条，链路是通的。",
+        f"ops-test-{time.strftime('%Y%m%d%H%M%S')}",
+        "运维·测试",
+        text,
+        "mini-ops test notification",
         capped=False,
     )
     delivered, failed = n.flush()
@@ -191,6 +215,10 @@ def cmd_test_notify(cfg: Config, args: argparse.Namespace) -> int:
 
 def cmd_digest(cfg: Config, args: argparse.Namespace) -> int:
     """Send the pending digest now (otherwise it goes out at the configured hours)."""
+    if _agent_running(cfg):
+        _request(cfg, "digest")
+        print("handed to the running agent; it sends within one tick")
+        return 0
     engine, store = build(cfg)
     sent = engine.maybe_digest(time.time(), force=True)
     delivered, failed = engine.notifier.flush()

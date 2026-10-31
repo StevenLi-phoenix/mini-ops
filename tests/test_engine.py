@@ -298,3 +298,21 @@ def test_forced_digest_ignores_the_hour_but_not_emptiness(tmp_path):
     assert r.engine.maybe_digest(r.now) is False  # noon is not a digest hour
     assert r.engine.maybe_digest(r.now, force=True) is True
     assert r.engine.maybe_digest(r.now, force=True) is False  # nothing left
+
+
+def test_cli_requests_are_processed_by_the_agent(tmp_path):
+    r = Rig(tmp_path)
+    r.cfg = r.engine.cfg = r.cfg.__class__(**{**r.cfg.__dict__, "state_dir": tmp_path / "st"})
+    r.tick()
+    r.append("ERROR something")
+    r.tick()
+    d = tmp_path / "st" / "requests"
+    d.mkdir(parents=True)
+    (d / "digest-1.json").write_text('{"op": "digest"}')
+    (d / "test-notify-2.json").write_text('{"op": "test-notify", "text": "hello owner"}')
+    (d / "junk.json").write_text("not json")
+    r.tick()
+    kinds = sorted(p["kind"] for p in r.posts)
+    assert kinds == ["host.ops.digest", "host.ops.test"]
+    assert next(p for p in r.posts if p["kind"] == "host.ops.test")["title"] == "hello owner"
+    assert not list(d.glob("*.json"))

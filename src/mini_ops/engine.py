@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
+import json
 import logging
 import time
 from collections.abc import Callable
@@ -356,6 +357,36 @@ class Engine:
             return True
         return False
 
+    # ---- requests from the CLI ----------------------------------------------------------
+    def process_requests(self, now: float) -> None:
+        """``mini-ops digest|test-notify`` hand work to the running agent instead of writing the
+        state file themselves (two writers would lose each other's updates)."""
+        req_dir = self.cfg.state_dir / "requests"
+        for path in sorted(req_dir.glob("*.json")) if req_dir.is_dir() else ():
+            try:
+                req = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                req = {}
+            try:
+                path.unlink()  # junk is dropped too, never retried forever
+            except OSError:
+                pass
+            if req.get("op") == "digest":
+                log.info(
+                    "digest requested: %s",
+                    "queued" if self.maybe_digest(now, force=True) else "empty",
+                )
+            elif req.get("op") == "test-notify":
+                stamp = time.strftime("%Y%m%d%H%M%S", time.localtime(now))
+                self.notifier.enqueue(
+                    "test",
+                    f"ops-test-{stamp}",
+                    "运维·测试",
+                    clip(str(req.get("text", "")), 280),
+                    "mini-ops test notification",
+                    capped=False,
+                )
+
     # ---- the loop body ------------------------------------------------------------------
     def tick(self) -> TickReport:
         now = self.env.clock()
@@ -384,6 +415,7 @@ class Engine:
             )
             if not done and len(data["backlog"]) < BACKLOG_CAP:
                 data["backlog"].append(dataclasses.asdict(inc))
+        self.process_requests(now)
         self.maybe_digest(now)
         self.notifier.flush()
         self._ticks += 1

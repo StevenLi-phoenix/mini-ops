@@ -66,6 +66,25 @@ def test_test_notify_without_token_stays_queued(conf, tmp_path, capsys):
     assert "queued=1" in capsys.readouterr().out
 
 
+def test_commands_hand_off_to_a_running_agent_instead_of_writing_state(conf, tmp_path, capsys):
+    import fcntl
+    import json as _json
+
+    state = tmp_path / "state"
+    state.mkdir(exist_ok=True)
+    holder = open(state / "lock", "w")
+    fcntl.flock(holder, fcntl.LOCK_EX)  # an agent is "running"
+    try:
+        assert cli.main(["-c", str(conf), "digest"]) == 0
+        assert cli.main(["-c", str(conf), "test-notify", "hello"]) == 0
+    finally:
+        holder.close()
+    assert "handed to the running agent" in capsys.readouterr().out
+    files = sorted((state / "requests").glob("*.json"))
+    assert [_json.loads(f.read_text())["op"] for f in files] == ["digest", "test-notify"]
+    assert not (state / "state.json").exists()  # the CLI did not touch the state file
+
+
 def test_run_once_survives_everything_unavailable(conf, tmp_path, capsys):
     # launchctl says the job is not loaded; no credentials; no network. A tick must not raise.
     assert cli.main(["-c", str(conf), "run", "--once"]) == 0
