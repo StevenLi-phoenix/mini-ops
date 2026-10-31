@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 420" font-family="-apple-system, 'PingFang SC', sans-serif">
+  <rect width="1280" height="420" fill="#0f1720"/>
+  <text x="40" y="52" fill="#e6edf3" font-size="30" font-weight="700">mini-ops</text>
+  <text x="40" y="82" fill="#8b98a5" font-size="17">LLM auto-ops for a Mac mini: observe, decide (suppress / act), run guarded fixes, tell the owner</text>
+  <g font-size="15" fill="#e6edf3">
+    <rect x="40" y="120" width="230" height="230" rx="12" fill="#17222d" stroke="#2d3f50"/>
+    <text x="58" y="148" font-weight="700">observe</text>
+    <text x="58" y="176" fill="#8b98a5">launchctl print (state, runs)</text>
+    <text x="58" y="200" fill="#8b98a5">HTTP / unix-socket probes</text>
+    <text x="58" y="224" fill="#8b98a5">log tails (rotation-safe)</text>
+    <text x="58" y="248" fill="#8b98a5">tailscale advertise check</text>
+    <text x="58" y="290" fill="#6ea8d9">AMS: LogLine severity</text>
+    <rect x="310" y="120" width="230" height="230" rx="12" fill="#17222d" stroke="#2d3f50"/>
+    <text x="328" y="148" font-weight="700">gate (no LLM)</text>
+    <text x="328" y="176" fill="#8b98a5">signature: NEW / BACK / FLAP</text>
+    <text x="328" y="200" fill="#8b98a5">job down, restart storm</text>
+    <text x="328" y="224" fill="#8b98a5">health: 3 failed probes</text>
+    <text x="328" y="248" fill="#8b98a5">freeze (planned maintenance)</text>
+    <text x="328" y="290" fill="#6ea8d9">AMS cause_key + DSH ga-watch</text>
+    <rect x="580" y="120" width="230" height="230" rx="12" fill="#1f2a1b" stroke="#3d5a2f"/>
+    <text x="598" y="148" font-weight="700">LLM triage</text>
+    <text x="598" y="176" fill="#a9c79a">suppress → digest (cached 3 d)</text>
+    <text x="598" y="200" fill="#a9c79a">act → diagnosis + 1 action</text>
+    <text x="598" y="224" fill="#8b98a5">gateway key, $0.30 / day cap</text>
+    <text x="598" y="248" fill="#8b98a5">raw response saved first</text>
+    <text x="598" y="290" fill="#8b98a5">log text = fenced, redacted data</text>
+    <rect x="850" y="120" width="190" height="230" rx="12" fill="#2a2118" stroke="#6b4a24"/>
+    <text x="868" y="148" font-weight="700">actions (code)</text>
+    <text x="868" y="176" fill="#d9b27a">kickstart</text>
+    <text x="868" y="200" fill="#d9b27a">soft_restart_kaorou</text>
+    <text x="868" y="224" fill="#d9b27a">clean_tmp</text>
+    <text x="868" y="248" fill="#d9b27a">advertise_tailscale</text>
+    <text x="868" y="290" fill="#8b98a5">cooldown · caps · burn guard</text>
+    <rect x="1080" y="120" width="170" height="230" rx="12" fill="#17222d" stroke="#2d3f50"/>
+    <text x="1098" y="148" font-weight="700">notify</text>
+    <text x="1098" y="176" fill="#8b98a5">DSH host source</text>
+    <text x="1098" y="200" fill="#8b98a5">→ WeChat note</text>
+    <text x="1098" y="224" fill="#8b98a5">alert: now</text>
+    <text x="1098" y="248" fill="#8b98a5">digest: 09:00 / 21:00</text>
+  </g>
+  <g stroke="#4a5b6b" stroke-width="2" fill="none">
+    <path d="M270 235 H310"/><path d="M540 235 H580"/><path d="M810 235 H850"/><path d="M1040 235 H1080"/>
+  </g>
+  <text x="40" y="395" fill="#8b98a5" font-size="14">LaunchAgent app.lishuyu.mini-ops · stdlib + ams · state in ~/.local/state/mini-ops · audit trail incidents.jsonl</text>
+</svg>
