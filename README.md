@@ -26,7 +26,7 @@ one WeChat message when it acted, one digest (09:00 / 21:00) for everything it c
 | `kaorou-daemon` | pipeline worker | launchd state, restart storm, `daemon.err.log` | `soft_restart_kaorou` (drains; refused while any job runs or ffmpeg exists) |
 | `kaorou-api` | panel + REST | launchd, `/healthz`, `api.err.log` | `kickstart` |
 | `kaorou-cookies` / `-potoken` | cookie refresh / PO-token server | last exit code, `/ping`, log `ERR` lines | -- |
-| `asr`, `tts` | speech services (run through tcc-host) | launchd, `/health`, stderr log | `kickstart` |
+| `asr` | speech recognition service (runs through tcc-host) | launchd, `/health`, stderr log | `kickstart` |
 | `chrome-cookie-proxy` | cookie export helper | launchd, socket connect, HTTP status in its log | `kickstart` |
 | `tcc-host` | TCC launcher | `deny` / `fail` lines | -- |
 | `dsh-events` | DSH event service (system domain) | launchd, `/` answers 401, **stderr only** | -- (observe; others deploy it) |

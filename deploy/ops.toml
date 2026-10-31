@@ -85,14 +85,9 @@ health_url = "http://127.0.0.1:8099/health"
 logs = ["~/services/asr-service/logs/stderr.log"]
 actions = ["kickstart"]
 
-[[service]]
-id = "tts"
-description = "Text to speech on 127.0.0.1:8098"
-launchd = "gui/501/com.tts.service"
-expect = "running"
-health_url = "http://127.0.0.1:8098/health"
-logs = ["~/services/tts-service/logs/stderr.log"]
-actions = ["kickstart"]
+# tts removed 2026-10-31: owner moved TTS to the laptop (feiyu); com.tts.service is stopped and
+# launchctl-disabled on the mini (restore: launchctl enable + bootstrap, then re-add the block
+# [[service]] id="tts", launchd="gui/501/com.tts.service", expect="running", health_url="http://127.0.0.1:8098/health").
 
 [[service]]
 id = "chrome-cookie-proxy"

@@ -86,7 +86,7 @@ def test_shipped_production_config_parses():
 
     cfg = load(Path(__file__).resolve().parent.parent / "deploy" / "ops.toml")
     ids = {s.id for s in cfg.services}
-    assert {"kaorou-daemon", "kaorou-api", "asr", "tts", "chrome-cookie-proxy", "dsh-events"} <= ids
+    assert {"kaorou-daemon", "kaorou-api", "asr", "chrome-cookie-proxy", "dsh-events"} <= ids
     daemon = cfg.service("kaorou-daemon")
     assert "kickstart" not in daemon.actions and daemon.actions == ("soft_restart_kaorou",)
     dsh = cfg.service("dsh-events")

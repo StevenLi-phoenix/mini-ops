@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. Format: [Keep a Changelog](https://keepachangelog.com/),
 versioned with [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- Production config drops the `tts` service: TTS moved to the laptop (feiyu), so `com.tts.service` is stopped and disabled on the mini.
+
 ## [0.1.0] - 2026-10-31
 
 ### Added
