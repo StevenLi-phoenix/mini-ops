@@ -35,6 +35,8 @@ MAX_TRIAGE_PER_TICK = 3
 BACKLOG_CAP = 50
 TAILSCALE_EVERY_S = 300
 EVIDENCE_LINES = 3
+TRACE_LINES = 14  # a Traceback needs its tail to be diagnosable
+_TRACE = ("Traceback", "ERROR: Exception")
 
 
 @dataclass
@@ -103,7 +105,8 @@ class Engine:
                     continue
                 seen.add(sig)
                 idx = lines.index(ln)
-                ctx = tuple(lines[idx : idx + EVIDENCE_LINES])
+                span = TRACE_LINES if ln.lstrip().startswith(_TRACE) else EVIDENCE_LINES
+                ctx = tuple(lines[idx : idx + span])
                 out.append(
                     Incident(
                         "log",

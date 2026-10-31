@@ -53,7 +53,7 @@ class GateConfig:
     flap_window_s: float = 3600
     flap_count: int = 5  # occurrences inside flap_window_s that make a cause "flapping"
     flap_cooldown_s: float = 6 * 3600  # at most one flap report per cause per this period
-    suppress_ttl_s: float = 24 * 3600  # an LLM "suppress" verdict is remembered this long
+    suppress_ttl_s: float = 3 * 24 * 3600  # an LLM "suppress" verdict is remembered this long
     job_repeat_s: float = 1800  # a job that stays down is re-reported at most this often
     flap_runs: int = 3  # launchd restarts inside flap_runs_window_s => restart storm
     flap_runs_window_s: float = 600

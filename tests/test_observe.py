@@ -128,3 +128,18 @@ def test_classify_and_noteworthy():
     assert logs.classify(svc, "2026-10-31T03:38:49Z deny service=x reason=y") == Severity.ERROR
     got = list(logs.noteworthy(svc, ["ok", "IGNORE ERROR boom", "ERROR boom", "WARNING hmm"]))
     assert [g[0] for g in got] == ["ERROR boom", "WARNING hmm"]
+
+
+def test_stated_level_beats_message_body():
+    svc = parse({"service": [{"id": "d"}]}).services[0]
+    info = "2026-10-30 23:48:08,615 INFO [watch] yt2bili.watcher: feed fetch HTTP Error 404: Not Found failed (attempt 1/4)"
+    warn = (
+        "2026-10-30 23:48:08,615 WARNING [watch] yt2bili.watcher: RSS feed failed after 4 attempts"
+    )
+    br = "2026-10-31 03:38:49,001 [WARNING] registry: heartbeat failed for asr: timed out"
+    assert logs.classify(svc, info) == Severity.INFO
+    assert logs.classify(svc, warn) == Severity.WARNING
+    assert logs.classify(svc, br) == Severity.WARNING
+    assert logs.classify(svc, "ERROR: [youtube] abc: This live event will begin") >= Severity.ERROR
+    plain = parse({"service": [{"id": "d", "log_format": "plain"}]}).services[0]
+    assert logs.classify(plain, warn) >= Severity.WARNING  # plain = words only

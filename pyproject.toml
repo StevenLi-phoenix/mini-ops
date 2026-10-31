@@ -37,6 +37,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]  # the formatter wraps code; long CJK strings are fine
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E501", "E702", "B011", "B017"]

@@ -36,3 +36,11 @@ def test_signature_collapses_youtube_video_ids():
     a = "ERROR: [youtube] eNabNrWjNPI: This live event will begin in a few moments."
     b = "ERROR: [youtube] PvisWSLNBNM: This live event will begin in a few moments."
     assert signature("d", a) == signature("d", b)
+
+
+def test_signature_of_json_logs_ignores_the_numbers_inside():
+    a = '{"level":"warn","msg":"dropped invalid upstream items","src":"gdelt-geo","articles":6494,"ts":"2026-10-30T18:30:03Z"}'
+    b = '{"level":"warn","msg":"dropped invalid upstream items","src":"gdelt-geo","articles":7001,"ts":"2026-10-31T01:00:00Z"}'
+    c = '{"level":"warn","msg":"dropped invalid upstream items","src":"other"}'
+    assert signature("ga", a) == signature("ga", b) != signature("ga", c)
+    assert signature("ga", "{not json") != signature("ga", "{not json either")

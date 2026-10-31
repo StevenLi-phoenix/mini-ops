@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -63,8 +64,33 @@ def read_new(path: Path, entry: dict[str, Any], *, seed: bool = False) -> tuple[
     return [ln for ln in lines if ln.strip()], skipped
 
 
+# "2026-10-30 23:48:08,615 INFO [watch] ..." / "2026-10-31 03:38 [WARNING] registry: ...":
+# python-logging output where the level is stated after the timestamp. A stated level beats
+# whatever words the message body happens to contain ("INFO ... failed ... (attempt 1/4)").
+_STATED = re.compile(
+    r"^\d{4}-\d{2}-\d{2}[ T][\d:,.]+Z?\s+\[?(DEBUG|INFO|WARNING|WARN|ERROR|CRITICAL|FATAL)\]?(?=\s|:)"
+)
+_STATED_SEVERITY = {
+    "DEBUG": Severity.DEBUG,
+    "INFO": Severity.INFO,
+    "WARNING": Severity.WARNING,
+    "WARN": Severity.WARNING,
+    "ERROR": Severity.ERROR,
+    "CRITICAL": Severity.CRITICAL,
+    "FATAL": Severity.CRITICAL,
+}
+
+
 def classify(svc: ServiceConfig, line: str) -> Severity:
-    """Severity by AMS's heuristics, then the service's own ``escalate`` patterns."""
+    """Severity: a stated level, else AMS's heuristics; then the service's ``escalate`` patterns."""
+    m = _STATED.match(line)
+    if m and svc.log_format in ("auto", "level-prefix"):
+        sev = _STATED_SEVERITY[m.group(1)]
+        return (
+            Severity.ERROR
+            if sev < Severity.ERROR and any(p.search(line) for p in svc.escalate)
+            else sev
+        )
     sev = LogLine.from_raw(
         svc.id, "stderr", line.encode("utf-8", "replace"), svc.log_format
     ).severity

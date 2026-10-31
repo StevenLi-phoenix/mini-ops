@@ -7,6 +7,7 @@ and reduced to a stable *signature* so that one cause is one cause however often
 
 from __future__ import annotations
 
+import json
 import re
 
 from ams.platform.policy import cause_key
@@ -64,8 +65,30 @@ def sanitize(text: str, limit: int = 400) -> str:
     return clip(redact(strip_controls(text)), limit)
 
 
+def _json_signature(service: str, text: str) -> str | None:
+    """Structured logs: the cause is (level, msg, source), never the numbers inside."""
+    if not text.lstrip().startswith("{"):
+        return None
+    try:
+        obj = json.loads(text)
+    except ValueError:
+        return None
+    if not isinstance(obj, dict) or not isinstance(obj.get("msg"), str):
+        return None
+    where = next((str(obj[k]) for k in ("src", "source", "component") if obj.get(k)), "")
+    msg = _normalize_msg(obj["msg"])
+    return f"{service}|json|{obj.get('level', '')}|{msg}|{where}"[:300]
+
+
+def _normalize_msg(msg: str) -> str:
+    return re.sub(r"\d+", "N", msg)
+
+
 def signature(service: str, text: str) -> str:
     """Stable identity of a log line's cause (ids, numbers and timestamps collapsed)."""
+    structured = _json_signature(service, text)
+    if structured is not None:
+        return structured
     pre = text
     for pattern, replacement in _ID_RULES:
         pre = pattern.sub(replacement, pre)
