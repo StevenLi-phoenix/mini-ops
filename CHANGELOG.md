@@ -5,6 +5,10 @@ versioned with [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Production config watches `system/app.lishuyu.ams` (observe only, no logs): AMS supervises disk-watch and global-awareness, and nothing else noticed when it stopped.
+
 ### Changed
 
 - Production config drops the `tts` service: TTS moved to the laptop (feiyu), so `com.tts.service` is stopped and disabled on the mini.

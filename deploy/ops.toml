@@ -116,6 +116,14 @@ health_accept = [401]      # 401 = alive, wants a login
 logs = ["/Users/dsh-runtime/logs/stderr.log"]   # stderr only: stdout.log carries a login token URL
 
 [[service]]
+id = "ams"
+description = "AMS harness (system domain, user dsh-runtime): supervises disk-watch and global-awareness. Observe only: if it stops, so do host disk warnings and the global-awareness feed"
+launchd = "system/app.lishuyu.ams"
+expect = "running"
+# No logs: ams.err.log is 60+ MB of INFO from its children, and global-awareness findings already reach the owner
+# through DSH's ga-watch. Whether AMS is up is the signal nobody else watches.
+
+[[service]]
 id = "tailscale"
 description = "Tailscale Services this Mac must advertise (a reboot or update drops them)"
 actions = ["advertise_tailscale"]

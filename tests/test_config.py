@@ -92,3 +92,14 @@ def test_shipped_production_config_parses():
     dsh = cfg.service("dsh-events")
     assert dsh.actions == () and dsh.health_accept == (401,) and dsh.domain == "system"
     assert str(dsh.logs[0]).endswith("stderr.log")  # never stdout.log (login token URL)
+
+
+def test_shipped_config_watches_ams():
+    from pathlib import Path
+
+    cfg = load(Path(__file__).resolve().parent.parent / "deploy" / "ops.toml")
+    ams = cfg.service("ams")
+    assert ams.domain == "system" and ams.launchd == "system/app.lishuyu.ams"
+    assert ams.expect == "running"
+    assert ams.actions == ()  # observe only: the AMS harness belongs to dsh-runtime
+    assert ams.logs == ()  # ams.err.log is 60+ MB of INFO; global-awareness findings go through ga-watch
