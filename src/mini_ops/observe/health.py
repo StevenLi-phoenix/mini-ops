@@ -16,17 +16,17 @@ class Probe:
     detail: str
 
 
-def http(url: str, timeout: float = 5.0) -> Probe:
+def http(url: str, timeout: float = 5.0, accept: tuple[int, ...] = ()) -> Probe:
     req = urllib.request.Request(url, method="GET", headers={"User-Agent": "mini-ops"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 - config-controlled
             code = resp.status
     except urllib.error.HTTPError as e:
-        return Probe(False, f"HTTP {e.code}")
+        return Probe(e.code in accept, f"HTTP {e.code}")
     except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as e:
         reason = getattr(e, "reason", e)
         return Probe(False, f"{type(reason).__name__}: {reason}"[:160])
-    return Probe(200 <= code < 400, f"HTTP {code}")
+    return Probe(200 <= code < 400 or code in accept, f"HTTP {code}")
 
 
 def unix_socket(path: Path, timeout: float = 3.0) -> Probe:

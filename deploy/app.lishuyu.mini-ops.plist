@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- mini-ops: LLM auto-ops for the Mac mini. LaunchAgent in the user's GUI domain.
+     Install: cp to ~/Library/LaunchAgents/ ; launchctl bootstrap gui/$(id -u) <this file>
+     Stop:    launchctl bootout gui/$(id -u)/app.lishuyu.mini-ops   (nothing else depends on it)
+     No TCC-protected path is read (it watches logs on the internal disk and talks HTTP), so it
+     runs directly, not through tcc-host. -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>app.lishuyu.mini-ops</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/lishuyu/Codes/mini-ops/.venv/bin/mini-ops</string>
+        <string>run</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/lishuyu/Codes/mini-ops</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>PYTHONUNBUFFERED</key>
+        <string>1</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+    <key>ProcessType</key>
+    <string>Background</string>
+    <key>StandardOutPath</key>
+    <string>/Users/lishuyu/.local/state/mini-ops/logs/launchd.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/lishuyu/.local/state/mini-ops/logs/launchd.err.log</string>
+</dict>
+</plist>

@@ -59,6 +59,7 @@ def test_http_probe_and_socket():
     base = f"http://127.0.0.1:{srv.server_port}"
     assert health.http(base + "/ok").ok
     assert health.http(base + "/bad").detail == "HTTP 503"
+    assert health.http(base + "/bad", accept=(503,)).ok  # e.g. 401 = "alive, wants a login"
     srv.shutdown()
     assert not health.http(base + "/ok", timeout=0.5).ok
     sp = tmp_path / "p.sock"

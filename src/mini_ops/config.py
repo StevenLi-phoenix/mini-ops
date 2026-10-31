@@ -99,6 +99,7 @@ class ServiceConfig:
     escalate: tuple[re.Pattern[str], ...] = ()  # lines that are ERROR whatever their text says
     health_url: str | None = None
     health_socket: Path | None = None
+    health_accept: tuple[int, ...] = ()  # extra HTTP codes that count as alive (e.g. 401)
     actions: tuple[str, ...] = ()
     description: str = ""
 
@@ -180,6 +181,7 @@ def _service(raw: dict[str, Any]) -> ServiceConfig:
             "escalate",
             "health_url",
             "health_socket",
+            "health_accept",
             "actions",
             "description",
         },
@@ -217,6 +219,7 @@ def _service(raw: dict[str, Any]) -> ServiceConfig:
         escalate=escalate,
         health_url=raw.get("health_url"),
         health_socket=_expand(sock) if sock else None,
+        health_accept=tuple(int(c) for c in raw.get("health_accept", ())),
         actions=actions,
         description=raw.get("description", ""),
     )

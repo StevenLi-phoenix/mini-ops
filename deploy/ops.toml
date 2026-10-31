@@ -1,0 +1,125 @@
+# mini-ops configuration for the Mac mini. Install to ~/.config/mini-ops/ops.toml.
+# Credentials are files next to it (never in this file):
+#   ~/.config/mini-ops/llm-key     gateway key (llmgw_..., model allow-list + daily USD cap)
+#   ~/.config/mini-ops/host-token  DSH lsy-event-ingest bearer token of the `host` source
+
+[ops]
+state_dir = "~/.local/state/mini-ops"
+tick_s = 30
+mode = "live"            # "dry-run": triage and notify, but never run an action
+digest_hours = [9, 21]   # local time; the suppressed/muted items go out as one message
+
+[llm]
+base_url = "https://api.lishuyu.app/llm"
+model = "deepseek-flash"
+daily_calls = 40
+daily_usd = 0.30         # local cap; the gateway key has its own daily cap of the same size
+
+[notify]
+url = "http://127.0.0.1:3081/hooks/lsy"
+kind_prefix = "host.ops" # DSH `host-alerts` subscription: kinds host.* -> a plain WeChat note
+max_per_hour = 4
+
+[gate]
+suppress_ttl_s = 259200  # an LLM "suppress" verdict is remembered for 3 days
+
+[actions]
+cooldown_s = 1800            # same action on the same service: not twice within 30 min
+max_per_target_per_day = 3
+max_per_hour = 4             # across all services
+
+[actions.advertise_tailscale]
+services = ["svc:dsh"]
+
+[kaorou]
+api = "http://127.0.0.1:8096"
+env_script = "~/Codes/translate_upload_yt_bilibili/service/kaorou-env.sh"
+
+# ---- services ---------------------------------------------------------------------------------
+
+[[service]]
+id = "kaorou-daemon"
+description = "YouTube-to-Bilibili pipeline worker (download, translate, burn subtitles, upload)"
+launchd = "gui/501/app.lishuyu.kaorou.daemon"
+expect = "running"
+logs = ["~/.local/state/yt2bili/logs/daemon.err.log"]
+# Never kickstart: a hard kill loses the in-flight ffmpeg burn. soft-restart drains, and mini-ops
+# only runs it when no job is running and no ffmpeg process exists.
+actions = ["soft_restart_kaorou"]
+
+[[service]]
+id = "kaorou-api"
+description = "Kaorou panel and REST API on 127.0.0.1:8096 (stateless)"
+launchd = "gui/501/app.lishuyu.kaorou.api"
+expect = "running"
+logs = ["~/.local/state/yt2bili/logs/api.err.log"]
+health_url = "http://127.0.0.1:8096/healthz"
+actions = ["kickstart"]
+# Known and accepted: the panel runs without auth on the tailnet.
+ignore = ["KAOROU_AUTH_DISABLED=1"]
+
+[[service]]
+id = "kaorou-cookies"
+description = "Every 6 h: refresh the YouTube cookies file through chrome-cookie-proxy"
+launchd = "gui/501/app.lishuyu.kaorou.cookies"
+expect = "interval"
+logs = ["~/.local/state/yt2bili/logs/cookies-refresh.log"]
+escalate = ['(^|\s)ERR ']
+ignore = ["older than 90 days", "To suppress this warning"]
+
+[[service]]
+id = "kaorou-potoken"
+description = "YouTube PO-token server (node, 127.0.0.1:4416)"
+launchd = "gui/501/app.lishuyu.kaorou.potoken"
+expect = "observe"
+health_url = "http://127.0.0.1:4416/ping"
+logs = ["~/.local/state/yt2bili/logs/potoken.err.log"]
+
+[[service]]
+id = "asr"
+description = "Speech recognition (FunASR + mlx-whisper) on 127.0.0.1:8099; idles out and is respawned"
+launchd = "gui/501/com.asr.service"
+expect = "running"
+health_url = "http://127.0.0.1:8099/health"
+logs = ["~/services/asr-service/logs/stderr.log"]
+actions = ["kickstart"]
+
+[[service]]
+id = "tts"
+description = "Text to speech on 127.0.0.1:8098"
+launchd = "gui/501/com.tts.service"
+expect = "running"
+health_url = "http://127.0.0.1:8098/health"
+logs = ["~/services/tts-service/logs/stderr.log"]
+actions = ["kickstart"]
+
+[[service]]
+id = "chrome-cookie-proxy"
+description = "Signed helper that exports YouTube/Google cookies from Chrome over a unix socket"
+launchd = "gui/501/app.lishuyu.chrome-cookie-proxy"
+expect = "running"
+health_socket = "~/.local/state/chrome-cookie-proxy/proxy.sock"   # connect only, never a request
+logs = ["~/.local/state/chrome-cookie-proxy/proxy.log"]
+escalate = ['/v1/\S+ [45]\d\d']
+actions = ["kickstart"]
+
+[[service]]
+id = "tcc-host"
+description = "Launcher that holds the removable-volume TCC grant for asr/tts/kaorou (log only)"
+logs = ["~/.local/state/tcc-host/tcc-host.log"]
+log_format = "plain"
+escalate = [' (deny|fail) ']
+
+[[service]]
+id = "dsh-events"
+description = "DSH event service (system domain, user dsh-runtime): observe only, other people deploy it"
+launchd = "system/app.lishuyu.dsh-events"
+expect = "running"
+health_url = "http://127.0.0.1:3081/"
+health_accept = [401]      # 401 = alive, wants a login
+logs = ["/Users/dsh-runtime/logs/stderr.log"]   # stderr only: stdout.log carries a login token URL
+
+[[service]]
+id = "tailscale"
+description = "Tailscale Services this Mac must advertise (a reboot or update drops them)"
+actions = ["advertise_tailscale"]

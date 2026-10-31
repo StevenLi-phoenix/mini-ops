@@ -35,7 +35,9 @@ def parse_duration(text: str) -> float:
 
 
 def setup_logging(cfg: Config, verbose: bool, to_file: bool) -> None:
-    handlers: list[logging.Handler] = [logging.StreamHandler(sys.stderr)]
+    handlers: list[logging.Handler] = []
+    if verbose or not to_file or sys.stderr.isatty():
+        handlers.append(logging.StreamHandler(sys.stderr))  # under launchd the file is the log
     if to_file:
         d = cfg.state_dir / "logs"
         d.mkdir(parents=True, exist_ok=True, mode=0o700)

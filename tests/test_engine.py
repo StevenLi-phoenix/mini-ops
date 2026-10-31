@@ -66,7 +66,7 @@ class Rig:
         env = Env(
             runner=self._run,
             read_job=lambda spec, r: self.jobs[spec],
-            http_probe=lambda u: health.Probe(True, "ok"),
+            http_probe=lambda u, accept=(): health.Probe(True, "ok"),
             sleep=lambda s: None,
             clock=lambda: self.now,
         )

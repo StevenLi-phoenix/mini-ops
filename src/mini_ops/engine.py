@@ -45,7 +45,7 @@ class Env:
 
     runner: Runner = default_run
     read_job: Callable[[str, Runner], JobState] = launchd.read_job
-    http_probe: Callable[[str], health.Probe] = health.http
+    http_probe: Callable[..., health.Probe] = health.http
     socket_probe: Callable[[Path], health.Probe] = health.unix_socket
     sleep: Callable[[float], None] = time.sleep
     clock: Callable[[], float] = time.time
@@ -135,7 +135,7 @@ class Engine:
                     self._note_recovery(svc, job, now)
             if svc.health_url or svc.health_socket:
                 pr = (
-                    self.env.http_probe(svc.health_url)
+                    self.env.http_probe(svc.health_url, accept=svc.health_accept)
                     if svc.health_url
                     else self.env.socket_probe(svc.health_socket)
                 )  # type: ignore[arg-type]

@@ -79,3 +79,16 @@ def test_load_errors(tmp_path):
     ok = tmp_path / "ok.toml"
     ok.write_text('[[service]]\nid = "a"\n')
     assert load(ok).config_dir == tmp_path
+
+
+def test_shipped_production_config_parses():
+    from pathlib import Path
+
+    cfg = load(Path(__file__).resolve().parent.parent / "deploy" / "ops.toml")
+    ids = {s.id for s in cfg.services}
+    assert {"kaorou-daemon", "kaorou-api", "asr", "tts", "chrome-cookie-proxy", "dsh-events"} <= ids
+    daemon = cfg.service("kaorou-daemon")
+    assert "kickstart" not in daemon.actions and daemon.actions == ("soft_restart_kaorou",)
+    dsh = cfg.service("dsh-events")
+    assert dsh.actions == () and dsh.health_accept == (401,) and dsh.domain == "system"
+    assert str(dsh.logs[0]).endswith("stderr.log")  # never stdout.log (login token URL)
