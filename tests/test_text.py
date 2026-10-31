@@ -4,7 +4,7 @@ from mini_ops.text import clip, redact, sanitize, signature, strip_controls
 def test_redacts_bearer_and_prefixed_keys():
     assert "abcdefghij" not in redact("Authorization: Bearer abcdefghijklmnop")
     assert "llmgw_" not in redact("key llmgw_0123456789abcdef used")
-    assert "pat_" not in redact("pat_JnAOn2o5xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+    assert "pat_" not in redact("pat_FAKEFAKExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
 
 
 def test_redacts_key_value_pairs_and_hex_and_jwt():
