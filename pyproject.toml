@@ -1,0 +1,43 @@
+[project]
+name = "mini-ops"
+version = "0.1.0"
+description = "LLM auto-ops for a Mac mini: watch launchd jobs, health endpoints and logs; triage with an LLM; run allow-listed fixes; notify."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = [
+    # AMS supplies log-severity classification, cause keys and the escalation journal.
+    "ams @ git+https://github.com/StevenLi-phoenix/agent-managed-services@66bb037",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-timeout", "ruff"]
+
+[project.scripts]
+mini-ops = "mini_ops.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mini_ops"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+timeout = 60
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501", "E702", "B011", "B017"]
+"src/mini_ops/triage.py" = ["E501"]
