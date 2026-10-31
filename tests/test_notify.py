@@ -23,16 +23,20 @@ def test_alert_has_diagnosis_evidence_action_and_no_secrets():
     r = ActionResult("kickstart", "asr", True, True, "pid=7")
     title, text = render_alert(INC, V, r)
     # the phone only shows subject + title (DSH drops `text` in a notify note): all of it is in the title
-    assert title.startswith("ASR 进程退出 ｜ 诊断：进程被 SIGKILL")
+    assert title.startswith("【已自动处理，无需操作】ASR 进程退出 ｜ 诊断：进程被 SIGKILL")
     assert "\n" not in title and len(title) <= 290
     assert "已执行 kickstart：成功" in title and "建议：查内存" in title
-    assert text.startswith("【运维】asr：ASR 进程退出") and "证据：" in text
+    assert text.startswith("【已自动处理，无需操作】asr：ASR 进程退出") and "证据：" in text
     assert "abcdefgh1234" not in text and "fourth" not in text  # redacted, max 3 evidence lines
 
 
 def test_alert_refused_action_and_fallback_without_llm():
     r = ActionResult("kickstart", "asr", False, False, "", "冷却中")
     assert "未执行 kickstart：冷却中" in render_alert(INC, V, r)[0]
+    assert render_alert(INC, V, r)[0].startswith("【需要你处理】")  # nothing was fixed
+    failed = ActionResult("kickstart", "asr", True, False, "rc=1")
+    assert render_alert(INC, V, failed)[0].startswith("【需要你处理】")
+    assert render_alert(INC, None, None, note="n")[0].startswith("【需要你处理】")
     title, text = render_alert(INC, None, None, note="LLM 不可用：今日调用已达上限")
     assert "asr 没有在运行" in title and "LLM 不可用" in title and "LLM 不可用" in text
     v2 = Verdict("act", "low", "s", "d", None, "", "rm_rf")

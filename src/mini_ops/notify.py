@@ -41,9 +41,12 @@ def render_alert(
     action = result.line() if result is not None else ""
     if result is None and verdict and verdict.rejected_action:
         action = f"未执行：模型提议的动作 {sanitize(verdict.rejected_action, 40)} 不在允许清单里"
+    # Does the owner have to do something? Only a fix that ran and worked answers "no".
+    fixed = result is not None and result.executed and result.ok
+    tag = "【已自动处理，无需操作】" if fixed else "【需要你处理】"
     title = _oneline(
         [
-            sanitize(head, 70),
+            tag + sanitize(head, 70),
             f"诊断：{sanitize(verdict.diagnosis, 110)}" if verdict and verdict.diagnosis else note,
             sanitize(action, 80),
             f"建议：{sanitize(verdict.advice, 60)}" if verdict and verdict.advice else "",
@@ -51,7 +54,7 @@ def render_alert(
         ],
         290,
     )
-    lines: list[str] = [f"【运维】{inc.service}：{sanitize(head, 120)}"]
+    lines: list[str] = [f"{tag}{inc.service}：{sanitize(head, 120)}"]
     if verdict and verdict.diagnosis:
         lines.append(f"诊断：{verdict.diagnosis}")
     elif note:
